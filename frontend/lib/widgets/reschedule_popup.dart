@@ -17,52 +17,12 @@ class ReschedulePopup extends StatefulWidget {
 
 class _ReschedulePopupState extends State<ReschedulePopup> {
   DateTime? _selectedDate;
-  String? _selectedTimeSlot;
-  Location? _selectedLocation;
-  List<String> _availableTimeSlots = [];
-  List<Location> _locations = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-  }
-
-  Future<void> _loadInitialData() async {
-    await _loadTimeSlots();
-    await _loadLocations();
-  }
-
-  Future<void> _loadTimeSlots() async {
-    try {
-      final slots = await ApiService.getTimeSlots(
-        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-      );
-      setState(() {
-        _availableTimeSlots = slots;
-        _selectedTimeSlot = slots.isNotEmpty ? slots.first : null;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load time slots: ${e.toString()}';
-      });
-    }
-  }
-
-  Future<void> _loadLocations() async {
-    try {
-      final locations = await ApiService.getLocations();
-      setState(() {
-        _locations = locations;
-        _selectedLocation = locations.isNotEmpty ? locations.first : null;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load locations: ${e.toString()}';
-      });
-    }
   }
 
   Future<void> _selectDate() async {
@@ -84,18 +44,17 @@ class _ReschedulePopupState extends State<ReschedulePopup> {
       },
     );
 
-    if (picked != null) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
       });
-      await _loadTimeSlots();
     }
   }
 
   Future<void> _reschedule() async {
-    if (_selectedDate == null || _selectedTimeSlot == null) {
+    if (_selectedDate == null) {
       setState(() {
-        _errorMessage = 'Please select both date and time slot';
+        _errorMessage = 'Please select date slot';
       });
       return;
     }
@@ -108,8 +67,6 @@ class _ReschedulePopupState extends State<ReschedulePopup> {
     try {
       final rescheduledDeliveries = await ApiService.rescheduleDeliveries(
         date: DateFormat('yyyy-MM-dd').format(_selectedDate!),
-        timeSlot: _selectedTimeSlot!,
-        location: _selectedLocation?.name,
       );
 
       widget.onRescheduled(rescheduledDeliveries);
@@ -192,78 +149,6 @@ class _ReschedulePopupState extends State<ReschedulePopup> {
 
             const SizedBox(height: 16),
 
-            // Time Slot Selection
-            const Text(
-              'Select Time Slot',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<String>(
-                value: _selectedTimeSlot,
-                hint: const Text('Select time slot'),
-                isExpanded: true,
-                underline: const SizedBox(),
-                items: _availableTimeSlots.map((slot) {
-                  return DropdownMenuItem<String>(
-                    value: slot,
-                    child: Text(slot),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTimeSlot = value;
-                  });
-                },
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Location Selection
-            const Text(
-              'Select Location',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<Location>(
-                value: _selectedLocation,
-                hint: const Text('Select location'),
-                isExpanded: true,
-                underline: const SizedBox(),
-                items: _locations.map((location) {
-                  return DropdownMenuItem<Location>(
-                    value: location,
-                    child: Text(location.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLocation = value;
-                  });
-                },
-              ),
-            ),
-
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
               Container(
@@ -289,9 +174,7 @@ class _ReschedulePopupState extends State<ReschedulePopup> {
                 ),
               ),
             ],
-
             const SizedBox(height: 24),
-
             // Action Buttons
             Row(
               children: [

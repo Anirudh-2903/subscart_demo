@@ -110,6 +110,10 @@ app.get('/api/deliveries', (req, res) => {
   const { date, location, timeSlot } = req.query;
   let filteredDeliveries = deliveries;
 
+    if (date) {
+      filteredDeliveries = deliveries.filter(delivery => delivery.deliveryDate === date);
+    }
+
   res.json({
     success: true,
     data: filteredDeliveries
@@ -152,31 +156,17 @@ app.get('/api/locations', (req, res) => {
 // Reschedule delivery
 // Update the reschedule endpoint to handle bulk rescheduling
 app.put('/api/deliveries/reschedule', (req, res) => {
-  const { date, timeSlot, location } = req.body;
+  const { date } = req.body;
 
   // Validate date is not in the past
   const selectedDate = new Date(date);
   const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
 
   if (selectedDate < currentDate) {
     return res.status(400).json({
       success: false,
       message: 'Cannot reschedule to a past date'
     });
-  }
-
-  // If it's today, validate time slot
-  if (selectedDate.toDateString() === currentDate.toDateString()) {
-    const currentHour = new Date().getHours();
-    const slotHour = parseInt(timeSlot.split(':')[0]);
-
-    if (slotHour <= currentHour) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot reschedule to a past time slot'
-      });
-    }
   }
 
   // Find deliveries for the current date
@@ -188,10 +178,6 @@ app.put('/api/deliveries/reschedule', (req, res) => {
   // Reschedule all matching deliveries
   const rescheduledDeliveries = deliveriesToReschedule.map(delivery => {
     delivery.deliveryDate = date;
-    delivery.timeSlot = timeSlot;
-    if (location) {
-      delivery.location = location;
-    }
     return delivery;
   });
 

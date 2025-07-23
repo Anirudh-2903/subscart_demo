@@ -230,7 +230,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
           content: Text(_isPaused ? 'Subscription paused' : 'Subscription resumed'),
           backgroundColor: _isPaused ? Colors.orange : Colors.green,
         ),
-      );
+  );
     } catch (e) {
       setState(() {
         _isPaused = !_isPaused; // Revert on error

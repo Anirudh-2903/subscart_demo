@@ -3,9 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/delivery_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api';
-
-  static Future<List<Delivery>> getDeliveries({
+  static const String baseUrl = 'http://10.0.2.2:3000/api';  static Future<List<Delivery>> getDeliveries({
     String? date,
     String? location,
     String? timeSlot,
@@ -80,33 +78,30 @@ class ApiService {
   }
 
   static Future<List<Delivery>> rescheduleDeliveries({
-  required String date,
-  required String timeSlot,
-  String? location,
+    required String date,
   }) async {
-  try {
-  final response = await http.put(
-  Uri.parse('$baseUrl/api/deliveries/reschedule'),
-  body: jsonEncode({
-  'date': date,
-  'timeSlot': timeSlot,
-  'location': location,
-  }),
-  headers: {'Content-Type': 'application/json'},
-  );
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/deliveries/reschedule'), // Removed extra /api
+        body: jsonEncode({'date': date}),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-  if (response.statusCode == 200) {
-  final jsonResponse = jsonDecode(response.body);
-  return (jsonResponse['data'] as List)
-      .map((json) => Delivery.fromJson(json))
-      .toList();
-  } else {
-  final errorResponse = jsonDecode(response.body);
-  throw Exception(errorResponse['message'] ?? 'Failed to reschedule');
-  }
-  } catch (e) {
-  throw Exception(e.toString());
-  }
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        if (jsonResponse['success']) { // Added success check
+          return (jsonResponse['data'] as List)
+              .map((json) => Delivery.fromJson(json))
+              .toList();
+        } else {
+          throw Exception(jsonResponse['message'] ?? 'Failed to reschedule');
+        }
+      } else {
+        throw Exception('Failed to reschedule: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error rescheduling: $e');
+    }
   }
 
   static Future<Delivery> skipDelivery(String deliveryId) async {
